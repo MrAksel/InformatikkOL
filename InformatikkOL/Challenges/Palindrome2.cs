@@ -35,9 +35,6 @@ namespace InformatikkOL.Challenges
 
             BlockifyStrings(s1, s2, out s1blocks, out s2blocks);
 
-            PrintBlocks(s1, s1blocks);
-            PrintBlocks(s2, s2blocks);
-            ProgressLine("");
             PrintBlocks(s1, s2, s1blocks, s2blocks);
 
             // Actual calculation
@@ -554,6 +551,9 @@ namespace InformatikkOL.Challenges
             ProgressLine(sb);
         }
 
+        /// <summary>
+        /// Prints the strings divided in blocks so that corresponding blocks line up
+        /// </summary>
         private void PrintBlocks(string s1, string s2, BlockList s1blocks, BlockList s2blocks)
         {
             StringBuilder sShort = new StringBuilder();
@@ -576,66 +576,55 @@ namespace InformatikkOL.Challenges
                 longString = s1;
             }
 
-            int currStringIndex = 0;
-            int margins = 4;
-            int bsoff = 0;
-            int bloff = 0;
+            int extra = 2;
+            int spaces = 2;
+            int shortOffset = 0;
+
             for (int bi = 0; bi < shortestList.Count; bi++)
             {
-                Block b1 = shortestList[bi + bsoff];
-                Block b2 = longestList[bi + bloff];
+                Block b = shortestList[bi];
+                string sub = shortString.Substring(b.Item1, b.Item2);
 
-                string sub1 = shortString.Substring(b1.Item1, b1.Item2);
-                string sub2 = longString.Substring(b2.Item1, b2.Item2);
-
-                if (b1.Item3 == -1 && b2.Item3 == -1)
+                if (b.Item3 != -1)
                 {
-                    // Both are orphans
-                    sShort.AppendFormat("|{0}|", sub1);
-                    sLong.AppendFormat("|{0}|", sub2);
-                    currStringIndex += Math.Max(sub1.Length, sub2.Length);
-                }
-                else if (b1.Item3 == -1)
-                {
-                    // b1 is an orphan, b2 is not. Process b2 later
-                    sShort.AppendFormat("|{0}|", sub1);
-                    bloff--;
-                    currStringIndex += sub1.Length;
-                }
-                else if (b2.Item3 == -1)
-                {
-                    // b2 is an orphan, b1 is not. Process b1 later
-                    sLong.AppendFormat("|{0}|", sub2);
-                    bsoff--;
-                    currStringIndex += sub2.Length;
-                }
-                else
-                {
-                    // Neither are orphans, check that they are referencing each other
-                    Debug.Assert(b1.Item3 == bi + bloff);
-                    Debug.Assert(b2.Item3 == bi + bsoff);
-
-                    sShort.AppendFormat("|{0}|", sub1);
-                    sLong.AppendFormat("|{0}|", sub2);
-                    currStringIndex += Math.Max(sub1.Length, sub2.Length);
+                    // Not an orphan, line it up with the corresponding block
+                    Block corr = longestList[b.Item3];
+                    // The other block is at index corr.Item1 + space taken by the margins
+                    int missing = corr.Item1 + b.Item3 * (spaces + extra) - sShort.Length;
+                    if (missing > 0)
+                    {
+                        // Append the missing spaces to align them
+                        sShort.Append(' ', missing);
+                        shortOffset += missing;
+                    }
                 }
 
-
-                currStringIndex += margins;
-                sShort.Append(' ', currStringIndex - sShort.Length);
-                sLong.Append(' ', currStringIndex - sLong.Length);
+                sShort.AppendFormat("|{0}|", sub);
+                sShort.Append(' ', spaces);
             }
-
-            for (int bi = shortestList.Count + bloff; bi < longestList.Count; bi++)
+            for (int bi = 0; bi < longestList.Count; bi++)
             {
-                Block b2 = longestList[bi + bloff];
-                string sub2 = longString.Substring(b2.Item1, b2.Item2);
+                Block b = longestList[bi];
+                string sub = longString.Substring(b.Item1, b.Item2);
 
-                sLong.AppendFormat("|{0}|", sub2);
+                if (b.Item3 != -1)
+                {
+                    // Not an orphan, line it up with the corresponding block
+                    Block corr = shortestList[b.Item3];
+                    // The other block is at index corr.Item1 + space taken by the margins
+                    int missing = corr.Item1 + b.Item3 * (spaces + extra) - sLong.Length + shortOffset;
+                    if (missing > 0)
+                    {
+                        // Append the missing spaces to align them
+                        sLong.Append(' ', missing);
+                    }
+                }
 
-                currStringIndex += sub2.Length + margins;
-                sLong.Append(' ', margins);
+                sLong.AppendFormat("|{0}|", sub);
+                sLong.Append(' ', spaces);
             }
+
+
 
             if (s1 == shortString)
             {
