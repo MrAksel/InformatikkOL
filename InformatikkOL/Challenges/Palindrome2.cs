@@ -35,7 +35,7 @@ namespace InformatikkOL.Challenges
 
             BlockifyStrings(s1, s2, out s1blocks, out s2blocks);
 
-            PrintBlocks(s1, s2, s1blocks, s2blocks);
+            //PrintBlocks(s1, s2, s1blocks, s2blocks);
 
             // Actual calculation
             DecreaseIndent();
@@ -173,6 +173,7 @@ namespace InformatikkOL.Challenges
                 ProgressLine("Trying removal ({0}): {1} -> {2}", changes, s1, mods1);
                 changes += MinRequiredChanges(mods1, s2);
 
+                ProgressLine("Total {0} edits", changes);
                 min = Math.Min(min, changes);
             }
 
@@ -190,6 +191,7 @@ namespace InformatikkOL.Challenges
                 ProgressLine("Trying removal ({0}): {1} -> {2}", changes, s2, mods2);
                 changes += MinRequiredChanges(s1, mods2);
 
+                ProgressLine("Total {0} edits", changes);
                 min = Math.Min(min, changes);
             }
 
@@ -228,18 +230,23 @@ namespace InformatikkOL.Challenges
                 {
                     Block s2corr = s2blocks[corrIndex];
 
-                    string mods1 = s1.Remove(s1orphan.Item1, s1orphan.Item2);
-                    string insVal = s2.Substring(s2corr.Item1, s2corr.Item2);
+                    // Insert exactly the same length as the block except if theres not enough charactes
+                    int subLen = Math.Min(s1orphan.Item2, s2.Length - s2corr.Item1);
+                    string insVal = s2.Substring(s2corr.Item1, subLen);
+                    string origBlock = s1.Substring(s1orphan.Item1, subLen);
+
+                    string mods1 = s1.Remove(s1orphan.Item1, subLen); // TODO remove the whole block, or only subLen chars?
                     mods1 = mods1.Insert(s1orphan.Item1, insVal);
 
-                    int charDiff = insVal.Length - s1orphan.Item2;
+                    int charDiff = Diff(origBlock, insVal);
 
                     // Count changes and recurse
-                    changes += (charDiff > 0 ? insVal.Length : s1orphan.Item2);
+                    changes += charDiff;
                     ProgressLine("Trying change ({0}): {1} -> {2}", changes, s1, mods1);
 
                     changes += MinRequiredChanges(mods1, s2);
 
+                    ProgressLine("Total {0} edits", changes);
                     min = Math.Min(min, changes);
                 }
             }
@@ -261,18 +268,23 @@ namespace InformatikkOL.Challenges
                 {
                     Block s1corr = s1blocks[corrIndex];
 
-                    string mods2 = s2.Remove(s2orphan.Item1, s2orphan.Item2);
-                    string insVal = s1.Substring(s1corr.Item1, s1corr.Item2);
+                    // Insert exactly the same length as the block except if theres not enough charactes
+                    int subLen = Math.Min(s2orphan.Item2, s1.Length - s1corr.Item1);
+                    string insVal = s1.Substring(s1corr.Item1, subLen);
+                    string origBlock = s2.Substring(s2orphan.Item1, subLen);
+
+                    string mods2 = s2.Remove(s2orphan.Item1, subLen);
                     mods2 = mods2.Insert(s2orphan.Item1, insVal);
 
-                    int charDiff = insVal.Length - s2orphan.Item2;
+                    int charDiff = Diff(origBlock, insVal);
 
                     // Count changes and recurse
-                    changes += (charDiff > 0 ? insVal.Length : s2orphan.Item2);
+                    changes += charDiff;
                     ProgressLine("Trying change ({0}): {1} -> {2}", changes, s2, mods2);
 
                     changes += MinRequiredChanges(s1, mods2);
 
+                    ProgressLine("Total {0} edits", changes);
                     min = Math.Min(min, changes);
                 }
             }
@@ -325,6 +337,7 @@ namespace InformatikkOL.Challenges
                     ProgressLine("Trying insertion ({0}): {1} -> {2}", changes, s2, mods2);
                     changes += MinRequiredChanges(s1, mods2);
 
+                    ProgressLine("Total {0} edits", changes);
                     min = Math.Min(min, changes);
                 }
             }
@@ -359,6 +372,7 @@ namespace InformatikkOL.Challenges
                     ProgressLine("Trying change ({0}): {1} -> {2}", changes, s1, mods1);
                     changes += MinRequiredChanges(mods1, s2);
 
+                    ProgressLine("Total {0} edits", changes);
                     min = Math.Min(min, changes);
                 }
             }
@@ -372,6 +386,31 @@ namespace InformatikkOL.Challenges
             char[] chars = input.ToCharArray();
             Array.Reverse(chars);
             return new string(chars);
+        }
+
+        // Counts the number of different characters in the two strings, and adds the difference i length
+        private int Diff(string s1, string s2)
+        {
+            if (s1.Length <= s2.Length)
+            {
+                int charDiffs = 0;
+                for (int i = 0; i < s1.Length; i++)
+                {
+                    if (s1[i] != s2[i])
+                        charDiffs++;
+                }
+                return charDiffs + s2.Length - s1.Length;
+            }
+            else
+            {
+                int charDiffs = 0;
+                for (int i = 0; i < s2.Length; i++)
+                {
+                    if (s1[i] != s2[i])
+                        charDiffs++;
+                }
+                return charDiffs + s1.Length - s2.Length;
+            }
         }
 
         /// <summary>
@@ -535,6 +574,8 @@ namespace InformatikkOL.Challenges
                 var restBlock = new Block(lasts2BlockEnd, s2.Length - lasts2BlockEnd, -1);
                 s2Blocks.Add(restBlock);
             }
+
+            PrintBlocks(s1, s2, s1Blocks, s2Blocks);
         }
 
         /// <summary>
@@ -624,7 +665,8 @@ namespace InformatikkOL.Challenges
                 sLong.Append(' ', spaces);
             }
 
-
+            if (sShort.Length == 0) sShort.Append("||");
+            if (sLong.Length == 0) sLong.Append("||");
 
             if (s1 == shortString)
             {
